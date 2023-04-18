@@ -26,14 +26,32 @@ fn compute_note(x1: Fr, x2: Fr, x3: Fr, x4: Fr) -> Fr {
     FixedLengthRescueCRHF::<Fr, 6, 1>::evaluate(input).unwrap()[0]
 }
 
-fn build_note_var(
+fn build_note_contraint(
     circuit: &mut PlonkCircuit<CircuitField>,
     token_id_var: usize,
-    token_amount_var: usize,
-    trapdoor_var: usize,
-    nullifier_var: usize,
-    expected_note_var: usize,
-) -> usize {
+    token_amount: Fr,
+    trapdoor: Fr,
+    nullifier: (Fr, bool),
+    expected_note: (Fr, bool),
+    max_var: usize,
+) -> Result<usize, PlonkError> {
+    let token_amount_var = circuit.create_variable(token_amount)?;
+    circuit.enforce_lt(token_amount_var, max_var)?;
+
+    let trapdoor_var = circuit.create_variable(trapdoor)?;
+
+    let (nullifier, is_public) = nullifier;
+    let nullifier_var = circuit.create_variable(nullifier)?;
+    if is_public {
+        circuit.set_variable_public(nullifier_var)?;
+    }
+
+    let (expected_note, is_public) = expected_note;
+    let expected_note_var = circuit.create_variable(expected_note)?;
+    if is_public {
+        circuit.set_variable_public(expected_note_var)?;
+    }
+
     let input: [usize; 6] = [
         token_id_var,
         token_amount_var,
@@ -46,7 +64,7 @@ fn build_note_var(
         .unwrap()[0];
     circuit.enforce_equal(expected_note_var, note_var).unwrap();
 
-    note_var
+    Ok(token_amount_var)
 }
 
 type MerkleTree = dyn MerkleTreeGadget<
@@ -55,8 +73,8 @@ type MerkleTree = dyn MerkleTreeGadget<
     DigestGadget = RescueDigestGadget,
 >;
 
-fn build_merkle_proof(circuit: &mut PlonkCircuit<CircuitField>, elem: Fr) -> Fr {
-    let height = 12;
+fn build_merkle_proof(circuit: &mut PlonkCircuit<CircuitField>, elem: Fr) {
+    let height = 10;
     let num_elems = 3u64.pow(height);
     let uid = 3u64.pow(height) - 1;
 
@@ -69,33 +87,16 @@ fn build_merkle_proof(circuit: &mut PlonkCircuit<CircuitField>, elem: Fr) -> Fr 
     println!("Building RMT took {:?}", start.elapsed());
 
     let expected_root = mt.commitment().digest();
-    println!("expected root {:?}", expected_root);
-    // expected root BigInt([16643733813379685007, 10229710218709978163, 6748363391713160074, 6544960887242389141])
     let (retrieved_elem, proof) = mt.lookup(uid).expect_ok().unwrap();
     assert_eq!(retrieved_elem, elem);
 
     let uid_var = circuit.create_variable(uid.into()).unwrap();
     let proof_var = MerkleTree::create_membership_proof_variable(circuit, &proof).unwrap();
-    // TODO create_public
     let root_var = MerkleTree::create_root_variable(circuit, expected_root).unwrap();
     MerkleTree::enforce_membership_proof(circuit, uid_var, proof_var, root_var).unwrap();
-
-    expected_root
 }
 
-// TODO add range checks
-// TODO fix below description
-//
-// Has 10 tokens and wants to take 7 out
-//                                          merkle root
-//                placeholder                                        x
-//        1                          x                     x                         x
-//   2        3                x          x            x       x                 x       x
-// 4  *5*   6   7            x   x      x   x        x   x   x   x             x   x   x   x
-#[allow(unused_variables)]
 fn gen_withdraw_circuit() -> Result<PlonkCircuit<CircuitField>, PlonkError> {
-    // let range_bit_len = 128usize;
-    // let mut circuit = PlonkCircuit::<CircuitField>::new_ultra_plonk(range_bit_len);
     let mut circuit = PlonkCircuit::<CircuitField>::new_turbo_plonk();
     let token_id = Fr::from(0);
     let token_id_var = circuit.create_public_variable(token_id)?;
@@ -108,21 +109,15 @@ fn gen_withdraw_circuit() -> Result<PlonkCircuit<CircuitField>, PlonkError> {
     let old_nullifier = Fr::from(200);
     let old_note: Fr = compute_note(token_id, whole_token_amount, old_trapdoor, old_nullifier);
 
-    let whole_token_amount_var: usize = circuit.create_variable(whole_token_amount)?;
-    // circuit.add_range_check_variable(whole_token_amount_var)?;
-    circuit.enforce_lt(whole_token_amount_var, max_var)?;
-    let old_trapdoor_var = circuit.create_variable(old_trapdoor)?;
-    let expected_old_note_var = circuit.create_variable(old_note)?;
-    let old_nullifier_var = circuit.create_public_variable(old_nullifier)?;
-
-    let old_note_var = build_note_var(
+    let whole_token_amount_var = build_note_contraint(
         &mut circuit,
         token_id_var,
-        whole_token_amount_var,
-        old_trapdoor_var,
-        old_nullifier_var,
-        expected_old_note_var,
-    );
+        whole_token_amount,
+        old_trapdoor,
+        (old_nullifier, true),
+        (old_note, false),
+        max_var,
+    )?;
 
     assert!(circuit
         .check_circuit_satisfiability(&[token_id, old_nullifier])
@@ -134,21 +129,15 @@ fn gen_withdraw_circuit() -> Result<PlonkCircuit<CircuitField>, PlonkError> {
     let new_nullifier = Fr::from(201);
     let new_note = compute_note(token_id, new_token_amount, new_trapdoor, new_nullifier);
 
-    let new_token_amount_var = circuit.create_variable(new_token_amount)?;
-    // circuit.add_range_check_variable(new_token_amount_var)?;
-    circuit.enforce_lt(new_token_amount_var, max_var)?;
-    let new_trapdoor_var = circuit.create_variable(new_trapdoor)?;
-    let new_nullifier_var = circuit.create_variable(new_nullifier)?;
-    let expected_new_note_var = circuit.create_public_variable(new_note)?;
-
-    let new_note_var = build_note_var(
+    let new_token_amount_var = build_note_contraint(
         &mut circuit,
         token_id_var,
-        new_token_amount_var,
-        new_trapdoor_var,
-        new_nullifier_var,
-        expected_new_note_var,
-    );
+        new_token_amount,
+        new_trapdoor,
+        (new_nullifier, false),
+        (new_note, true),
+        max_var,
+    )?;
 
     assert!(circuit
         .check_circuit_satisfiability(&[token_id, old_nullifier, new_note])
@@ -157,7 +146,6 @@ fn gen_withdraw_circuit() -> Result<PlonkCircuit<CircuitField>, PlonkError> {
     // token values
     let token_amount_out = Fr::from(7);
     let token_amount_out_var = circuit.create_public_variable(token_amount_out)?;
-    // circuit.add_range_check_variable(token_amount_out_var)?;
     circuit.enforce_lt(token_amount_out_var, max_var)?;
     let token_sum_var = circuit.add(token_amount_out_var, new_token_amount_var)?;
     circuit.enforce_equal(token_sum_var, whole_token_amount_var)?;
@@ -167,8 +155,7 @@ fn gen_withdraw_circuit() -> Result<PlonkCircuit<CircuitField>, PlonkError> {
         .is_ok());
 
     // merkle proof
-    let old_note = Fr::from(310_u64);
-    let root = build_merkle_proof(&mut circuit, old_note);
+    build_merkle_proof(&mut circuit, old_note);
 
     println!("num gates  {:?}", circuit.num_gates());
     println!("num vars   {:?}", circuit.num_vars());
@@ -202,21 +189,3 @@ fn withdraw(c: &mut Criterion) {
 
 criterion_group!(benches, withdraw);
 criterion_main!(benches);
-
-// struct Withdraw {
-//     // public
-//     token_id: Fr,
-//     old_nullifier: Fr,
-//     new_note: Fr,
-//     token_amount_out: Fr,
-//     merkle_root: Fr,
-//     // private
-//     old_trapdoor: Fr,
-//     new_trapdoor: Fr,
-//     new_nullifier: Fr,
-//     merkle_path: Vec<Fr>,
-//     leaf_index: u64,
-//     old_note: Fr,
-//     whole_token_amount: Fr,
-//     new_token_amount: Fr,
-// }
