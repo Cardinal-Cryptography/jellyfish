@@ -155,9 +155,11 @@ where
                 _ => None,
             })
             .map(|(children, branch)| {
+                let sib_branch1 = if branch == &0 { 1 } else { 0 };
+                let sib_branch2 = if branch == &2 { 1 } else { 2 };
                 Ok(Merkle3AryNodeVar {
-                    sibling1: self.create_variable(children[0].value())?,
-                    sibling2: self.create_variable(children[1].value())?,
+                    sibling1: self.create_variable(children[sib_branch1].value())?,
+                    sibling2: self.create_variable(children[sib_branch2].value())?,
                     is_left_child: self.create_boolean_variable(branch == &0)?,
                     is_right_child: self.create_boolean_variable(branch == &2)?,
                 })

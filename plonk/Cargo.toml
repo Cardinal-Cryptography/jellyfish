@@ -37,6 +37,7 @@ serde = { version = "1.0", default-features = false, features = ["derive"] }
 sha3 = "^0.10"
 tagged-base64 = { git = "https://github.com/espressosystems/tagged-base64"}
 # tagged-base64 = { git = "https://github.com/espressosystems/tagged-base64", branch = "update-ark-deps" }
+typenum = { version = "1.15.0", default-features = false }
 
 [dev-dependencies]
 ark-ed-on-bls12-377 = "0.4.0"

@@ -1,6 +1,7 @@
 use std::time::Instant;
 
 use ark_bls12_381::{Bls12_381, Fr};
+use ark_serialize::{CanonicalSerialize, Compress};
 use jf_plonk::{
     errors::PlonkError,
     proof_system::{PlonkKzgSnark, UniversalSNARK},
@@ -12,12 +13,16 @@ use jf_primitives::{
         rescue::RescueNativeGadget,
     },
     crhf::{FixedLengthRescueCRHF, CRHF},
-    merkle_tree::{prelude::RescueMerkleTree, MerkleCommitment, MerkleTreeScheme},
+    merkle_tree::{
+        prelude::RescueSparseMerkleTree, MerkleCommitment, MerkleTreeScheme,
+        UniversalMerkleTreeScheme,
+    },
 };
 use jf_relation::Circuit;
 use jf_relation::PlonkCircuit;
 
 use criterion::{criterion_group, criterion_main, Criterion};
+use num_bigint::BigUint;
 
 type CircuitField = Fr;
 
@@ -68,27 +73,25 @@ fn build_note_contraint(
 }
 
 type MerkleTree = dyn MerkleTreeGadget<
-    RescueMerkleTree<Fr>,
+    RescueSparseMerkleTree<BigUint, Fr>,
     MembershipProofVar = Merkle3AryMembershipProofVar,
     DigestGadget = RescueDigestGadget,
 >;
 
 fn build_merkle_proof(circuit: &mut PlonkCircuit<CircuitField>, elem: Fr) {
-    let height = 10;
-    let num_elems = 3u64.pow(height);
-    let uid = 3u64.pow(height) - 1;
+    let height = 11;
+    let uid = BigUint::from(0u64);
 
     println!("height {}", height);
     let start = Instant::now();
-    let mut elements: Vec<Fr> = (1..num_elems).map(Fr::from).collect();
-    elements.push(elem);
 
-    let mt = RescueMerkleTree::from_elems(height as usize, elements.clone()).unwrap();
-    println!("Building RMT took {:?}", start.elapsed());
+    let mt = RescueSparseMerkleTree::from_kv_set(height as usize, &[(uid.clone(), elem)]).unwrap();
+    println!("Building RSMT took {:?}", start.elapsed());
 
     let expected_root = mt.commitment().digest();
-    let (retrieved_elem, proof) = mt.lookup(uid).expect_ok().unwrap();
+    let (retrieved_elem, proof) = mt.lookup(&uid).expect_ok().unwrap();
     assert_eq!(retrieved_elem, elem);
+    assert!(mt.verify(&uid, proof.clone()).expect("succeed"));
 
     let uid_var = circuit.create_variable(uid.into()).unwrap();
     let proof_var = MerkleTree::create_membership_proof_variable(circuit, &proof).unwrap();
@@ -96,7 +99,7 @@ fn build_merkle_proof(circuit: &mut PlonkCircuit<CircuitField>, elem: Fr) {
     MerkleTree::enforce_membership_proof(circuit, uid_var, proof_var, root_var).unwrap();
 }
 
-fn gen_withdraw_circuit() -> Result<PlonkCircuit<CircuitField>, PlonkError> {
+fn gen_withdraw_circuit() -> Result<(PlonkCircuit<CircuitField>, Vec<Fr>), PlonkError> {
     let mut circuit = PlonkCircuit::<CircuitField>::new_turbo_plonk();
     let token_id = Fr::from(0);
     let token_id_var = circuit.create_public_variable(token_id)?;
@@ -167,24 +170,59 @@ fn gen_withdraw_circuit() -> Result<PlonkCircuit<CircuitField>, PlonkError> {
 
     circuit.finalize_for_arithmetization()?;
 
-    Ok(circuit)
+    let public_input = vec![token_id, old_nullifier, new_note, token_amount_out];
+
+    Ok((circuit, public_input))
 }
 
 fn withdraw(c: &mut Criterion) {
     let rng = &mut jf_utils::test_rng();
-    let cs = gen_withdraw_circuit().unwrap();
+    let (cs, pi) = gen_withdraw_circuit().unwrap();
 
     let max_degree = 10000;
     let srs = PlonkKzgSnark::<Bls12_381>::universal_setup(max_degree, rng).unwrap();
 
-    let (pk, _) = PlonkKzgSnark::<Bls12_381>::preprocess(&srs, &cs).unwrap();
-    c.bench_function("withdraw", |f| {
+    c.bench_function("key_generation", |f| {
         f.iter(|| {
-            let _ =
-                PlonkKzgSnark::<Bls12_381>::prove::<_, _, StandardTranscript>(rng, &cs, &pk, None)
-                    .unwrap();
+            PlonkKzgSnark::<Bls12_381>::preprocess(&srs, &cs).unwrap();
         })
     });
+
+    let (pk, vk) = PlonkKzgSnark::<Bls12_381>::preprocess(&srs, &cs).unwrap();
+    print_sizes("verify key", &vk);
+
+    c.bench_function("prover", |f| {
+        f.iter(|| {
+            PlonkKzgSnark::<Bls12_381>::prove::<_, _, StandardTranscript>(rng, &cs, &pk, None)
+                .unwrap();
+        })
+    });
+
+    let proof =
+        PlonkKzgSnark::<Bls12_381>::prove::<_, _, StandardTranscript>(rng, &cs, &pk, None).unwrap();
+    print_sizes("proof", &proof);
+
+    c.bench_function("verifier", |f| {
+        f.iter(|| {
+            PlonkKzgSnark::<Bls12_381>::verify::<StandardTranscript>(&vk, &pi, &proof, None)
+                .unwrap();
+        })
+    });
+}
+
+fn print_sizes<T: CanonicalSerialize>(name: &str, obj: &T) {
+    let mut buf_uncompressed = vec![0; obj.serialized_size(Compress::No)];
+    obj.serialize_with_mode(&mut buf_uncompressed[..], Compress::No)
+        .unwrap();
+    let mut buf_compressed = vec![0; obj.serialized_size(Compress::Yes)];
+    obj.serialize_with_mode(&mut buf_compressed[..], Compress::Yes)
+        .unwrap();
+    println!(
+        "{} size is: {} {}",
+        name,
+        buf_uncompressed.len(),
+        buf_compressed.len()
+    );
 }
 
 criterion_group!(benches, withdraw);
