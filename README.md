@@ -114,3 +114,4 @@ The pre-commit hooks are installed via the nix shell. To run them on all files u
 ```
 pre-commit run --all-files
 ```
+ 
