@@ -58,7 +58,7 @@ fn preimage(c: &mut Criterion) {
     let cs = gen_preimage_circuit().unwrap();
 
     let max_degree = 10000;
-    let srs = PlonkKzgSnark::<Bls12_377>::universal_setup(max_degree, rng).unwrap();
+    let srs = PlonkKzgSnark::<Bls12_377>::universal_setup_for_testing(max_degree, rng).unwrap();
 
     let (pk, _) = PlonkKzgSnark::<Bls12_377>::preprocess(&srs, &cs).unwrap();
     c.bench_function("preimage", |f| {

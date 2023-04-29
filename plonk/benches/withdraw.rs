@@ -180,7 +180,7 @@ fn withdraw(c: &mut Criterion) {
     let (cs, pi) = gen_withdraw_circuit().unwrap();
 
     let max_degree = 10000;
-    let srs = PlonkKzgSnark::<Bls12_381>::universal_setup(max_degree, rng).unwrap();
+    let srs = PlonkKzgSnark::<Bls12_381>::universal_setup_for_testing(max_degree, rng).unwrap();
 
     c.bench_function("key_generation", |f| {
         f.iter(|| {

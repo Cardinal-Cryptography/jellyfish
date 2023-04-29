@@ -61,7 +61,7 @@ fn poe(c: &mut Criterion) {
     //
     // The required SRS size can be obtained from the circuit.
     let srs_size = circuit.srs_size().unwrap();
-    let srs = PlonkKzgSnark::<Bls12_377>::universal_setup(srs_size, &mut rng).unwrap();
+    let srs = PlonkKzgSnark::<Bls12_377>::universal_setup_for_testing(srs_size, &mut rng).unwrap();
 
     // Then, we generate the proving key and verification key from the SRS and
     // circuit.
