@@ -16,6 +16,8 @@ use crate::pcs::{
     PCSError, PolynomialCommitmentScheme, StructuredReferenceString,
 };
 #[cfg(target_has_atomic = "ptr")]
+pub extern crate alloc;
+#[cfg(target_has_atomic = "ptr")]
 use alloc::sync::Arc;
 use ark_ec::{
     pairing::Pairing,
