@@ -19,12 +19,12 @@ sha2 = { version = "0.10.1", default-features = false }
 tagged-base64 = { git = "https://github.com/espressosystems/tagged-base64", tag = "0.3.0", default-features = false, features = ["serde", "ark-serialize"] }
 
 [dev-dependencies]
-ark-bls12-377 = "0.4.0"
-ark-bls12-381 = "0.4.0"
-ark-bn254 = "0.4.0"
-ark-ed-on-bls12-377 = "0.4.0"
-ark-ed-on-bls12-381 = "0.4.0"
-ark-ed-on-bn254 = "0.4.0"
+ark-bls12-377 = { version = "0.4.0", default-features = false }
+ark-bls12-381 = { version = "0.4.0", default-features = false }
+ark-bn254 = { version = "0.4.0", default-features = false }
+ark-ed-on-bls12-377 = { version = "0.4.0", default-features = false }
+ark-ed-on-bls12-381 = { version = "0.4.0", default-features = false }
+ark-ed-on-bn254 = { version = "0.4.0", default-features = false }
 
 [features]
 default = []
