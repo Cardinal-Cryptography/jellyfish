@@ -3,6 +3,7 @@ use crate::{
     need::{SnarkError::ParameterError, *},
     transcript::PlonkTranscript,
 };
+use ark_bls12_381::Fq;
 use ark_crypto_primitives::sponge::Absorb;
 use ark_ec::{
     pairing::Pairing,
@@ -41,6 +42,23 @@ pub trait RescueParameter: PrimeField + Absorb {
     const KEY_INJECTION_LE: [[&'static [u8]; 4]; 2 * ROUNDS];
     /// Permutation keys.
     const PERMUTATION_ROUND_KEYS: [[&'static [u8]; 4]; 25];
+}
+
+/// This is a dummy implementation of Rescue parameters
+/// to satisfy trait bound for Fq.
+/// This code should not be used for any other purpose.
+impl RescueParameter for Fq {
+    const A: u64 = 5;
+    const A_INV: &'static [u64] = &[0, 0, 0, 0, 0, 0];
+
+    const MDS_LE: [[&'static [u8]; STATE_SIZE]; STATE_SIZE] =
+        [[&[0u8; 32]; STATE_SIZE]; STATE_SIZE];
+
+    const INIT_VEC_LE: [&'static [u8]; STATE_SIZE] = [&[0u8; 32]; STATE_SIZE];
+
+    const KEY_INJECTION_LE: [[&'static [u8]; 4]; 2 * ROUNDS] = [[&[0u8; 32]; 4]; 2 * ROUNDS];
+
+    const PERMUTATION_ROUND_KEYS: [[&'static [u8]; 4]; 25] = [[&[0u8; 32]; 4]; 25];
 }
 
 /// (Aggregated) polynomial commitment evaluation info.
