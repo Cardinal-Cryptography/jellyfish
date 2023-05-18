@@ -1,7 +1,7 @@
 use crate::{
     alloc::string::ToString,
     need::SnarkError::{ParameterError, SnarkLookupUnsupported},
-    Commitment,
+    verifier::Commitment,
 };
 use ark_ec::{
     pairing::{Pairing, PairingOutput},

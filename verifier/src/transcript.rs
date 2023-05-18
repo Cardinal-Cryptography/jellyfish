@@ -1,6 +1,6 @@
 use crate::{
     need::{PlonkError, PlookupEvaluations, ProofEvaluations, VerifyingKey},
-    Commitment,
+    verifier::Commitment,
 };
 use ark_ec::{
     pairing::Pairing,
