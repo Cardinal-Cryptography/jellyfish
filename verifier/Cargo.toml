@@ -1,0 +1,30 @@
+[package]
+name = "jf-verifier"
+description = "UltraPlonk implementation"
+version = { workspace = true }
+authors = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+rust-version = { workspace = true }
+
+[dependencies]
+ark-crypto-primitives = { version = "0.4.0", default-features = false, features = ["sponge"] }
+ark-ec = { version = "0.4.0", default-features = false }
+ark-ff = { version = "0.4.0", default-features = false, features = ["asm"] }
+ark-poly = { version = "0.4.0", default-features = false }
+ark-serialize = { version = "0.4.0", default-features = false }
+ark-std = { version = "0.4.0", default-features = false }
+displaydoc = { version = "0.2.4", default-features = false }
+hashbrown = { version = "0.13.2", default-features = false }
+
+[features]
+default = []
+std = [
+    "ark-crypto-primitives/std",
+    "ark-std/std",
+    "ark-ff/std",
+    "ark-poly/std",
+    "ark-serialize/std",
+    "ark-std/std",
+    "displaydoc/std",
+]
