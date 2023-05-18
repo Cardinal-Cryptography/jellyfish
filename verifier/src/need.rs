@@ -1,11 +1,7 @@
-use crate::{
-    alloc::string::ToString,
-    need::SnarkError::{ParameterError, SnarkLookupUnsupported},
-    verifier::Commitment,
-};
+use crate::{need::SnarkError::SnarkLookupUnsupported, verifier::Commitment};
 use ark_ec::{
     pairing::{Pairing, PairingOutput},
-    CurveGroup, VariableBaseMSM,
+    VariableBaseMSM,
 };
 use ark_ff::{Field, PrimeField};
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
@@ -44,57 +40,6 @@ pub struct VerifyingKey<E: Pairing> {
 }
 
 impl<E: Pairing> VerifyingKey<E> {
-    /// Merge with another TurboPlonk verifying key to obtain a new TurboPlonk
-    /// verifying key. Return error if any of the following holds:
-    /// 1. the other verifying key has a different domain size;
-    /// 2. the circuit underlying the other key has different number of inputs.
-    /// 3. the key or the other key is not a TurboPlonk key.
-    pub(crate) fn merge(&self, other_vk: &Self) -> Result<Self, PlonkError> {
-        if self.is_merged || other_vk.is_merged {
-            return Err(ParameterError("cannot merge a merged key again".to_string()).into());
-        }
-        if self.domain_size != other_vk.domain_size {
-            return Err(ParameterError(
-                "mismatched domain size when merging verifying keys".to_string(),
-            )
-            .into());
-        }
-        if self.num_inputs != other_vk.num_inputs {
-            return Err(ParameterError(
-                "mismatched number of public inputs when merging verifying keys".to_string(),
-            )
-            .into());
-        }
-        if self.plookup_vk.is_some() || other_vk.plookup_vk.is_some() {
-            return Err(
-                ParameterError("cannot merge UltraPlonk verifying keys".to_string()).into(),
-            );
-        }
-        let sigma_comms: Vec<Commitment<E>> = self
-            .sigma_comms
-            .iter()
-            .zip(other_vk.sigma_comms.iter())
-            .map(|(com1, com2)| Commitment((com1.0 + com2.0).into_affine()))
-            .collect();
-        let selector_comms: Vec<Commitment<E>> = self
-            .selector_comms
-            .iter()
-            .zip(other_vk.selector_comms.iter())
-            .map(|(com1, com2)| Commitment((com1.0 + com2.0).into_affine()))
-            .collect();
-
-        Ok(Self {
-            domain_size: self.domain_size,
-            num_inputs: self.num_inputs + other_vk.num_inputs,
-            sigma_comms,
-            selector_comms,
-            k: self.k.clone(),
-            open_key: self.open_key,
-            plookup_vk: None,
-            is_merged: true,
-        })
-    }
-
     /// The lookup selector polynomial commitment
     pub(crate) fn q_lookup_comm(&self) -> Result<&Commitment<E>, PlonkError> {
         if self.plookup_vk.is_none() {

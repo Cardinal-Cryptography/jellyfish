@@ -4,13 +4,6 @@
 /// initialization
 pub(crate) const EXTRA_TRANSCRIPT_MSG_LABEL: &[u8] = b"extra info";
 
-/// Compute the ratio between the quotient polynomial domain size and
-/// the vanishing polynomial domain size
-#[inline]
-pub(crate) const fn domain_size_ratio(n: usize, num_wire_types: usize) -> usize {
-    (num_wire_types * (n + 1) + 2) / n + 1
-}
-
 /// Keccak-256 have a 64 byte state size to accommodate two hash digests.
 pub const KECCAK256_STATE_SIZE: usize = 64;
 
