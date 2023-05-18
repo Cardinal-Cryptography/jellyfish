@@ -21,6 +21,7 @@ use ark_ec::{
     pairing::Pairing,
     short_weierstrass::{Affine, SWCurveConfig},
 };
+use ark_ff::PrimeField;
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use ark_std::{format, vec, vec::Vec};
 
@@ -142,4 +143,36 @@ impl<E: Pairing> From<Proof<E>> for BatchProof<E> {
 
 pub fn parallelizable_slice_iter<T>(data: &[T]) -> ark_std::slice::Iter<T> {
     data.iter()
+}
+
+pub struct StandardTranscript(merlin::Transcript);
+
+impl<F> PlonkTranscript<F> for StandardTranscript {
+    /// create a new plonk transcript
+    fn new(label: &'static [u8]) -> Self {
+        Self(merlin::Transcript::new(label))
+    }
+
+    // append the message to the transcript
+    fn append_message(&mut self, label: &'static [u8], msg: &[u8]) -> Result<(), PlonkError> {
+        self.0.append_message(label, msg);
+
+        Ok(())
+    }
+
+    // generate the challenge for the current transcript
+    // and append it to the transcript
+    fn get_and_append_challenge<E>(
+        &mut self,
+        label: &'static [u8],
+    ) -> Result<E::ScalarField, PlonkError>
+    where
+        E: Pairing,
+    {
+        let mut buf = [0u8; 64];
+        self.0.challenge_bytes(label, &mut buf);
+        let challenge = E::ScalarField::from_le_bytes_mod_order(&buf);
+        self.0.append_message(label, &to_bytes!(&challenge)?);
+        Ok(challenge)
+    }
 }
