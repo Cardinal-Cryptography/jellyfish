@@ -3,7 +3,7 @@ use ark_ec::{
     pairing::{Pairing, PairingOutput},
     VariableBaseMSM,
 };
-use ark_ff::{Field, PrimeField};
+use ark_ff::{BigInteger384, Field, PrimeField};
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use ark_std::{string::String, vec, vec::Vec, Zero};
 use displaydoc::Display;
@@ -305,6 +305,14 @@ pub trait SWToTEConParam: PrimeField {
     const NEG_ALPHA: Self::BigInt;
     /// Parameter beta.
     const BETA: Self::BigInt;
+}
+
+use ark_bls12_381::Fq as Fq381;
+/// Dummy implementation for trait bounds
+impl SWToTEConParam for Fq381 {
+    const S: Self::BigInt = BigInteger384::new([0, 0, 0, 0, 0, 0]);
+    const NEG_ALPHA: Self::BigInt = BigInteger384::new([0, 0, 0, 0, 0, 0]);
+    const BETA: Self::BigInt = BigInteger384::new([0, 0, 0, 0, 0, 0]);
 }
 
 /// A struct that stores the polynomial evaluations in a Plonk proof.
