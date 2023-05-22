@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":["KeyPair","SchnorrSignatureScheme","SignKey","Signature","VerKey"]};

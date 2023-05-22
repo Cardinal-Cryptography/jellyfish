@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":["bls_over_bls12381","bls_over_bn254","schnorr"],"trait":["AggregateableSignatureSchemes","SignatureScheme"]};

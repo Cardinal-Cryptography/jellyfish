@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["build_batch_proof_and_vks_for_test"],"struct":["BatchArgument","Instance"]};

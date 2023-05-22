@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":["BatchProof","PlookupEvaluations","PlookupProof","PlookupProvingKey","PlookupVerifyingKey","Proof","ProofEvaluations","ProvingKey","VerifyingKey"],"type":["CommitKey","OpenKey","UniversalSrs"]};

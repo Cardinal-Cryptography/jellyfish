@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["GATE_WIDTH","N_MUL_SELECTORS","N_TURBO_PLONK_SELECTORS"],"fn":["compute_coset_representatives"]};

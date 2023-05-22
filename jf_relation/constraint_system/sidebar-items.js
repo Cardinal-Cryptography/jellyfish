@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["MergeableCircuitType","PlonkType"],"struct":["BoolVar","PlonkCircuit"],"trait":["Arithmetization","Circuit"],"type":["GateId","Variable","WireId"]};
