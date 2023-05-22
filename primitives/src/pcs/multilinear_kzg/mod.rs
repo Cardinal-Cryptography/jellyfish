@@ -10,6 +10,8 @@ mod batching;
 pub(crate) mod srs;
 pub(crate) mod util;
 
+extern crate alloc;
+
 use crate::pcs::{
     prelude::{Commitment, UnivariateUniversalParams},
     univariate_kzg::UnivariateKzgProof,
