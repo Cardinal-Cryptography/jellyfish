@@ -10,13 +10,13 @@ mod batching;
 pub(crate) mod srs;
 pub(crate) mod util;
 
-extern crate alloc;
-
 use crate::pcs::{
     prelude::{Commitment, UnivariateUniversalParams},
     univariate_kzg::UnivariateKzgProof,
     PCSError, PolynomialCommitmentScheme, StructuredReferenceString,
 };
+#[cfg(target_has_atomic = "ptr")]
+pub extern crate alloc;
 #[cfg(target_has_atomic = "ptr")]
 use alloc::sync::Arc;
 use ark_ec::{
