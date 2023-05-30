@@ -31,7 +31,9 @@ rand_chacha = { version = "0.3.1", default-features = false }
 rayon = { version = "1.5.0", optional = true }
 serde = { version = "1.0", default-features = false, features = ["derive"] }
 sha3 = "^0.10"
-tagged-base64 = { git = "https://github.com/espressosystems/tagged-base64", tag = "0.3.0" }
+tagged-base64 = { git = "https://github.com/espressosystems/tagged-base64"}
+# tagged-base64 = { git = "https://github.com/espressosystems/tagged-base64", branch = "update-ark-deps" }
+typenum = { version = "1.15.0", default-features = false }
 
 [dev-dependencies]
 ark-bls12-377 = "0.4.0"
@@ -42,11 +44,26 @@ ark-ed-on-bls12-377 = "0.4.0"
 ark-ed-on-bls12-381 = "0.4.0"
 ark-ed-on-bn254 = "0.4.0"
 hex = "^0.4.3"
+criterion = "0.3"
 
 # Benchmarks
+# [[bench]]
+# name = "plonk-benches"
+# path = "benches/bench.rs"
+# harness = false
+
 [[bench]]
-name = "plonk-benches"
-path = "benches/bench.rs"
+name = "poe"
+harness = false
+
+[[bench]]
+name = "preimage"
+path = "benches/preimage.rs"
+harness = false
+
+[[bench]]
+name = "withdraw"
+path = "benches/withdraw.rs"
 harness = false
 
 [features]
@@ -57,7 +74,7 @@ std = [
     "jf-utils/std", "num-bigint/std", "rand_chacha/std", "sha3/std"
 ]
 test_apis = [] # exposing apis for testing purpose
-parallel = ["ark-ff/parallel", "ark-ec/parallel", "ark-poly/parallel", 
+parallel = ["ark-ff/parallel", "ark-ec/parallel", "ark-poly/parallel",
             "jf-utils/parallel", "jf-relation/parallel", "jf-primitives/parallel",
             "dep:rayon" ]
 test-srs = []
